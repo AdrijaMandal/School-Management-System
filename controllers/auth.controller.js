@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import generateToken from "../utils/generateToken.js";
+import sendEmail from "../utils/sendEmail.js";
 import crypto from "crypto";
 
 
@@ -117,12 +118,12 @@ export const forgetPassword=async(req,res)=>{
             });
         }
 
-        const resetToken=crypto.randomBytes(20).toString("hex");
+        const resetToken = crypto.randomBytes(20).toString("hex");
         //HASH TOKEN
-        const hashedToken=await crypto.createHash("sha256").update(resetToken).digest("hex");
+        const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-        user.resetPasswordToken=hashedToken;
-        user.resetPasswordExpire=Date.now()+15*60*1000;
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
         await user.save();
 
         //RESET URL
@@ -161,17 +162,17 @@ export const forgetPassword=async(req,res)=>{
         `
         await sendEmail({
             email: user.email,
-            subject:"Password Reset Request",
+            subject: "Password Reset Request",
             html,
-        })
+        });
         res.status(200).json({
-                success:false,
-                message:"Password reset link sent to email",
-            });
+            success: true,
+            message: "Password reset link sent to email",
+        });
     }
     catch(error){
         res.status(500).json({
-            sucess:false,
+            success:false,
             message:error.message,
         });
 
@@ -180,17 +181,25 @@ export const forgetPassword=async(req,res)=>{
 
 export const resetPassword=async(req,res)=>{
     try{
-        const token=req.params;
-        const{password}=req.body;
-        //HASH TOKEN
-        const hashedToken=crypto.createHash("sha256").update(token).digest("hex")
+        const { token }= req.params;
+        const { password } = req.body;
 
-        const user=await User.findOne({
-            resetPasswordToken:hashedToken,
-            resetPasswordExpire:{
-                $gt:Date.now(),
-            }
-        })
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: "Password is required",
+            });
+        }
+
+        //HASH TOKEN
+        const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpire: {
+                $gt: Date.now(),
+            },
+        });
 
         if(!user){
             return res.status(400).json({
@@ -206,14 +215,31 @@ export const resetPassword=async(req,res)=>{
         user.resetPasswordExpire=undefined
         await user.save();
         res.status(200).json({
-                success:false,
-                message:"Password reset sucessful",
-            });
+            success: true,
+            message: "Password reset successful",
+        });
     }catch(error){
         res.status(500).json({
-                success:false,
-                message:error.message,
-            });
+            success:false,
+            message:error.message,
+        });
     }
 }
+
+//GET CURRENT USER
+
+export const getMe = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        return res.status(200).json({
+            success: true,
+            user: user,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
 
