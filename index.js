@@ -7,7 +7,7 @@ import helmet from "helmet";
 import connectDB from "./config/db.js";
 import seedAdmin from "./utils/adminSeeder.js";
 import authRoutes from "./routes/auth.routes.js"
-
+import classRoutes from "./routes/class.routes.js"
 
 
 dotenv.config();
@@ -43,6 +43,7 @@ app.get("/", (req, res) => {
 
 //API ENDPOINTS
 app.use("/api/auth",authRoutes)
+app.use("/api/class",classRoutes)
 
 const PORT = process.env.PORT || 8000;
 
